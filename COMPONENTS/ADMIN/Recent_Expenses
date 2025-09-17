@@ -1,0 +1,115 @@
+
+import React from "react";
+import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Receipt, Calendar, Users, IndianRupee } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+
+const categoryColors = {
+  utilities: "bg-blue-100 text-blue-800 border-blue-200",
+  groceries: "bg-green-100 text-green-800 border-green-200",
+  maintenance: "bg-orange-100 text-orange-800 border-orange-200",
+  cleaning: "bg-purple-100 text-purple-800 border-purple-200",
+  internet: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  rent: "bg-red-100 text-red-800 border-red-200",
+  other: "bg-gray-100 text-gray-800 border-gray-200"
+};
+
+const statusColors = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  partially_paid: "bg-blue-100 text-blue-800 border-blue-200",
+  fully_paid: "bg-green-100 text-green-800 border-green-200"
+};
+
+export default function RecentExpenses({ expenses, loading }) {
+  if (loading) {
+    return (
+      <Card className="shadow-xl bg-white/60 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="w-5 h-5" />
+            Recent Expenses
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {Array(5).fill(0).map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-4 rounded-xl border">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              <div className="text-right space-y-2">
+                <Skeleton className="h-4 w-16 ml-auto" />
+                <Skeleton className="h-6 w-20 rounded-full ml-auto" />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="shadow-sm bg-white border-slate-200/80">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-slate-800 text-lg">
+          <Receipt className="w-5 h-5 text-slate-500" />
+          Recent Expenses
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="divide-y divide-slate-100">
+          {expenses.length === 0 ? (
+            <div className="text-center py-16">
+              <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500 font-medium text-base">No expenses created yet</p>
+              <p className="text-slate-400 text-sm mt-1">Click "New Expense" to get started.</p>
+            </div>
+          ) : (
+            expenses.map((expense) => (
+              <div 
+                key={expense.id} 
+                className="grid grid-cols-3 p-4 hover:bg-slate-50/50 transition-colors items-center"
+              >
+                <div className="col-span-2 flex items-center gap-4">
+                  <div>
+                    <h3 className="font-semibold text-slate-800 mb-1">{expense.title}</h3>
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {format(new Date(expense.due_date || expense.created_date), "MMM d, yyyy")}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5" />
+                        {expense.split_details?.length || 0} people
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-1.5 text-base font-bold text-slate-800">
+                    <IndianRupee className="w-4 h-4" />
+                    {expense.total_amount?.toLocaleString()}
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge className={`${categoryColors[expense.category]} font-medium border text-xs`}>
+                      {expense.category}
+                    </Badge>
+                    <Badge className={`${statusColors[expense.status]} font-medium border text-xs capitalize`}>
+                      {expense.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
