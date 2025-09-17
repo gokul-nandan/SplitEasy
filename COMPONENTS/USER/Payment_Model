@@ -1,0 +1,201 @@
+import React, { useState } from "react";
+import { Payment } from "@/entities/Payment";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { 
+  CreditCard, 
+  IndianRupee, 
+  Smartphone, 
+  Building2, 
+  Banknote,
+  CheckCircle,
+  Loader2
+} from "lucide-react";
+
+const PhonePeIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="256" height="256" rx="60" fill="url(#paint0_linear_73_2)"/>
+    <path d="M194.887 63.854C188.598 57.5654 178.508 53.0781 168.419 50.2344C158.329 47.3906 147.458 46.2891 135.805 46.2891H46.875V209.766H94.1875V140.734H135.805C156.039 140.734 172.969 134.789 186.598 122.898C200.227 111.008 207.047 95.8203 207.047 77.3203C207.047 65.4297 201.172 49.3672 194.887 63.854V63.854ZM168.969 99.8594C159.047 109.781 146.477 114.742 132.172 114.742H94.1875V60.5312H132.172C146.477 60.5312 159.047 65.4922 168.969 75.4141C178.891 85.3359 183.852 95.8203 183.852 101.922C183.852 103.234 183.852 104.336 182.547 99.8594H168.969Z" fill="white"/>
+    <defs>
+      <linearGradient id="paint0_linear_73_2" x1="48" y1="48" x2="224" y2="240" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#9D50FF"/>
+        <stop offset="1" stop-color="#5F259F"/>
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+
+export default function PaymentModal({ expense, currentUser, onClose, onPaymentComplete }) {
+  const [paymentData, setPaymentData] = useState({
+    amount: "",
+    payment_method: "",
+    transaction_id: "",
+    notes: ""
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const userSplit = expense.split_details?.find(split => split.user_id === currentUser?.id);
+  const userAmount = userSplit?.amount || 0;
+
+  const paymentMethods = [
+    { value: "bank_transfer", label: "Bank Transfer", icon: Building2, color: "bg-blue-500" },
+    { value: "card", label: "Debit/Credit Card", icon: CreditCard, color: "bg-green-500" },
+    { value: "cash", label: "Cash", icon: Banknote, color: "bg-orange-500" }
+  ];
+
+  const handlePhonePePayment = () => {
+    window.open('https://phone.pe/26jdaq13', '_blank', 'noopener,noreferrer');
+    // Assume payment is completed externally and refresh the UI.
+    onPaymentComplete();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      await Payment.create({
+        expense_id: expense.id,
+        user_id: currentUser.id,
+        amount: parseFloat(paymentData.amount),
+        payment_method: paymentData.payment_method,
+        transaction_id: paymentData.transaction_id || `MANUAL_TXN_${Date.now()}`,
+        status: "completed",
+        payment_date: new Date().toISOString()
+      });
+
+      onPaymentComplete();
+    } catch (error) {
+      console.error("Manual payment failed:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-blue-600" />
+            Make Payment
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          {/* Expense Details */}
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 className="font-semibold text-slate-800 mb-1">{expense.title}</h3>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-600 font-medium">Amount Due:</span>
+              <div className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
+                <IndianRupee className="w-4 h-4" />
+                {userAmount.toLocaleString()}
+              </div>
+            </div>
+          </div>
+          
+          {/* Quick Pay Section */}
+          <div className="pt-2">
+            <Button 
+              onClick={handlePhonePePayment} 
+              className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white text-base font-bold flex items-center gap-3"
+            >
+              <PhonePeIcon />
+              Pay with PhonePe
+            </Button>
+          </div>
+          
+          <div className="flex items-center pt-2">
+            <Separator className="flex-1" />
+            <span className="px-3 text-sm text-slate-400 font-medium">OR</span>
+            <Separator className="flex-1" />
+          </div>
+
+          <p className="text-sm text-center text-slate-500">Record a manual payment:</p>
+
+          {/* Manual Payment Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="amount">Payment Amount</Label>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  max={userAmount}
+                  placeholder="0.00"
+                  value={paymentData.amount}
+                  onChange={(e) => setPaymentData({...paymentData, amount: e.target.value})}
+                  className="pl-8"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Payment Method</Label>
+              <Select 
+                value={paymentData.payment_method} 
+                onValueChange={(value) => setPaymentData({...paymentData, payment_method: value})}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map((method) => (
+                    <SelectItem key={method.value} value={method.value}>
+                      <div className="flex items-center gap-2">
+                        <method.icon className="w-4 h-4 text-slate-500" />
+                        {method.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isProcessing || !paymentData.amount || !paymentData.payment_method}
+                className="flex-1 bg-slate-800 hover:bg-slate-900"
+              >
+                {isProcessing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                )}
+                Record Payment
+              </Button>
+            </div>
+          </form>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
