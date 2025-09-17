@@ -1,0 +1,55 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "expense_id": {
+      "type": "string",
+      "description": "Reference to the expense"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User making the payment"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount paid"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "upi",
+        "bank_transfer",
+        "cash",
+        "card"
+      ],
+      "description": "Payment method used"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Transaction reference"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed"
+      ],
+      "default": "completed"
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the payment was made"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "Payment receipt/proof"
+    }
+  },
+  "required": [
+    "expense_id",
+    "user_id",
+    "amount"
+  ]
+}
