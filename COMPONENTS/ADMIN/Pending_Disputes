@@ -1,0 +1,99 @@
+import React from "react";
+import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, IndianRupee, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function PendingDisputes({ disputes, loading }) {
+  if (loading) {
+    return (
+      <Card className="shadow-xl bg-white/60 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            Pending Disputes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {Array(3).fill(0).map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border space-y-3">
+              <div className="flex justify-between items-start">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="shadow-xl bg-white/60 backdrop-blur-sm border-0">
+      <CardHeader className="border-b border-slate-100">
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2 text-slate-900">
+            <AlertCircle className="w-5 h-5 text-orange-600" />
+            Pending Disputes
+          </CardTitle>
+          {disputes.length > 0 && (
+            <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
+              {disputes.length} pending
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        {disputes.length === 0 ? (
+          <div className="text-center py-8">
+            <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">No pending disputes</p>
+            <p className="text-slate-400 text-sm">All disputes have been resolved</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {disputes.slice(0, 3).map((dispute) => (
+              <div key={dispute.id} className="p-4 rounded-xl border border-orange-200 bg-orange-50/30 hover:bg-orange-50/50 transition-colors">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-1 text-lg font-semibold text-slate-900">
+                    <IndianRupee className="w-4 h-4" />
+                    {dispute.dispute_amount?.toLocaleString()}
+                  </div>
+                  <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Pending
+                  </Badge>
+                </div>
+                <p className="text-slate-600 text-sm mb-3 leading-relaxed">{dispute.reason}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">
+                    {format(new Date(dispute.created_date), "MMM d, yyyy")}
+                  </span>
+                  <Link to={createPageUrl("AdminDisputes")}>
+                    <Button size="sm" variant="outline" className="border-orange-300 hover:bg-orange-100 text-orange-700">
+                      Review
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+            
+            {disputes.length > 3 && (
+              <Link to={createPageUrl("AdminDisputes")}>
+                <Button variant="outline" className="w-full mt-4 border-orange-200 hover:bg-orange-50 text-orange-700">
+                  View All {disputes.length} Disputes
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
