@@ -1,0 +1,81 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Expense description (e.g., 'Electricity Bill - January')"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "utilities",
+        "groceries",
+        "maintenance",
+        "cleaning",
+        "internet",
+        "rent",
+        "other"
+      ],
+      "description": "Expense category"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total expense amount"
+    },
+    "split_type": {
+      "type": "string",
+      "enum": [
+        "equal",
+        "custom"
+      ],
+      "default": "equal",
+      "description": "How the expense is split"
+    },
+    "split_details": {
+      "type": "array",
+      "description": "Individual splits for each person",
+      "items": {
+        "type": "object",
+        "properties": {
+          "person_name": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "user_id": {
+            "type": "string",
+            "description": "Matched user ID if found"
+          }
+        }
+      }
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Payment due date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "partially_paid",
+        "fully_paid"
+      ],
+      "default": "pending"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "Receipt or bill image URL"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the expense"
+    }
+  },
+  "required": [
+    "title",
+    "total_amount"
+  ]
+}
