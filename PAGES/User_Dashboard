@@ -1,0 +1,193 @@
+import React, { useState, useEffect } from "react";
+import { Expense, Payment, User } from "@/entities/all";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  CreditCard, 
+  Receipt, 
+  AlertCircle, 
+  Clock,
+  CheckCircle,
+  IndianRupee,
+  Calendar
+} from "lucide-react";
+import { format } from "date-fns";
+
+import UserExpenseCard from "../components/user/UserExpenseCard";
+import PaymentModal from "../components/user/PaymentModal";
+
+export default function UserDashboard() {
+  const [userExpenses, setUserExpenses] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userPayments, setUserPayments] = useState([]);
+  const [stats, setStats] = useState({
+    totalOwed: 0,
+    totalPaid: 0,
+    pendingCount: 0
+  });
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const user = await User.me();
+      setCurrentUser(user);
+
+      const [allExpenses, payments] = await Promise.all([
+        Expense.list("-created_date"),
+        Payment.filter({user_id: user.id})
+      ]);
+
+      // Filter expenses assigned to current user
+      const assignedExpenses = allExpenses.filter(expense => 
+        expense.split_details?.some(split => split.user_id === user.id)
+      );
+
+      setUserExpenses(assignedExpenses);
+      setUserPayments(payments);
+
+      // Calculate stats
+      const totalOwed = assignedExpenses.reduce((sum, expense) => {
+        const userSplit = expense.split_details?.find(split => split.user_id === user.id);
+        return sum + (userSplit?.amount || 0);
+      }, 0);
+
+      const totalPaid = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+      const pendingCount = assignedExpenses.filter(expense => {
+        const userSplit = expense.split_details?.find(split => split.user_id === user.id);
+        const paidForExpense = payments
+          .filter(payment => payment.expense_id === expense.id)
+          .reduce((sum, payment) => sum + payment.amount, 0);
+        return paidForExpense < (userSplit?.amount || 0);
+      }).length;
+
+      setStats({ totalOwed, totalPaid, pendingCount });
+
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentComplete = () => {
+    setSelectedExpense(null);
+    loadUserData(); // Refresh data
+  };
+
+  return (
+    <div className="p-6 space-y-8 max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">My Expenses</h1>
+          <p className="text-slate-600">Track your share of expenses and manage payments</p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <Calendar className="w-4 h-4" />
+          <span>Last updated: {format(new Date(), "MMM d, yyyy 'at' h:mm a")}</span>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-700 text-sm font-medium mb-1">Total Owed</p>
+                <div className="flex items-center gap-1 text-2xl font-bold text-blue-900">
+                  <IndianRupee className="w-5 h-5" />
+                  {stats.totalOwed.toLocaleString()}
+                </div>
+              </div>
+              <div className="p-3 bg-blue-500 rounded-xl">
+                <Receipt className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-100 border-green-200 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-700 text-sm font-medium mb-1">Total Paid</p>
+                <div className="flex items-center gap-1 text-2xl font-bold text-green-900">
+                  <IndianRupee className="w-5 h-5" />
+                  {stats.totalPaid.toLocaleString()}
+                </div>
+              </div>
+              <div className="p-3 bg-green-500 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-700 text-sm font-medium mb-1">Pending Bills</p>
+                <p className="text-2xl font-bold text-orange-900">{stats.pendingCount}</p>
+              </div>
+              <div className="p-3 bg-orange-500 rounded-xl">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Expenses List */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-bold text-slate-900">Your Assigned Expenses</h2>
+        {loading ? (
+          <div className="grid gap-6">
+            {Array(3).fill(0).map((_, i) => (
+              <Card key={i} className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 bg-slate-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                  <div className="h-10 bg-slate-200 rounded w-32"></div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : userExpenses.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Receipt className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">No expenses assigned yet</h3>
+            <p className="text-slate-500">Your admin will assign expenses to you when they create them</p>
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {userExpenses.map((expense) => (
+              <UserExpenseCard
+                key={expense.id}
+                expense={expense}
+                currentUser={currentUser}
+                userPayments={userPayments.filter(p => p.expense_id === expense.id)}
+                onPayClick={setSelectedExpense}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedExpense && (
+        <PaymentModal
+          expense={selectedExpense}
+          currentUser={currentUser}
+          onClose={() => setSelectedExpense(null)}
+          onPaymentComplete={handlePaymentComplete}
+        />
+      )}
+    </div>
+  );
+}
