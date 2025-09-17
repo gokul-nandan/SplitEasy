@@ -1,0 +1,50 @@
+{
+  "name": "Dispute",
+  "type": "object",
+  "properties": {
+    "expense_id": {
+      "type": "string",
+      "description": "Reference to the disputed expense"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User raising the dispute"
+    },
+    "dispute_amount": {
+      "type": "number",
+      "description": "Amount being disputed"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for the dispute"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "under_review",
+        "resolved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "admin_response": {
+      "type": "string",
+      "description": "Admin's response to the dispute"
+    },
+    "resolved_amount": {
+      "type": "number",
+      "description": "Final amount after resolution"
+    },
+    "resolved_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the dispute was resolved"
+    }
+  },
+  "required": [
+    "expense_id",
+    "user_id",
+    "reason"
+  ]
+}
